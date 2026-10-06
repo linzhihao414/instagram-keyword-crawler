@@ -95,8 +95,18 @@ async def crawl_hashtag(page, tag):
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
         await asyncio.sleep(8)
 
+    # Click "Recent" tab to get latest posts (not Top)
+    try:
+        recent = await page.query_selector('a[href$="/recent/"], button:has-text("Recent")')
+        if recent:
+            await recent.click()
+            await asyncio.sleep(4)
+            print("  Switched to Recent (latest posts)", flush=True)
+    except Exception as e:
+        print(f"  Recent tab: {e}", flush=True)
+
     # Scroll to load posts
-    for _ in range(20):
+    for _ in range(40):
         await page.evaluate("window.scrollBy(0, 800)")
         await asyncio.sleep(1)
 
@@ -150,6 +160,8 @@ async def crawl_hashtag(page, tag):
 
 def save_to_excel(all_data, keyword):
     OUTPUT_DIR.mkdir(exist_ok=True)
+    # Sort by likes descending (hottest first)
+    all_data = sorted(all_data, key=lambda x: x.get("likes", 0), reverse=True)
     wb = Workbook()
     ws = wb.active
     ws.title = "Posts"
